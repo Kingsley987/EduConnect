@@ -1,59 +1,103 @@
-import React, { useState, useEffect } from 'react';
-import { GraduationCap, Volume2, VolumeX } from 'lucide-react';
-import OnboardingScreen from './components/OnboardingScreen';
-import MainApp from './components/MainApp';
-import MusicPlayer from './components/MusicPlayer';
-import { AppProvider } from './context/AppContext';
+import React, { useState } from "react";
+import { Home, BookOpen, Bookmark, Trophy, TrendingUp } from "lucide-react";
+import HomeScreen from "./screens/HomeScreen";
+import StudyScreen from "./screens/StudyScreen";
+import QuizScreen from "./screens/QuizScreen";
+import BookmarksScreen from "./screens/BookmarksScreen";
+import LeaderboardScreen from "./screens/LeaderboardScreen";
+import ProgressScreen from "./screens/ProgressScreen";
 
-function App() {
-  const [isOnboarded, setIsOnboarded] = useState(false);
-  const [isMusicEnabled, setIsMusicEnabled] = useState(true);
+type Screen = "home" | "study" | "quiz" | "bookmarks" | "leaderboard" | "progress";
 
-  useEffect(() => {
-    const onboarding = localStorage.getItem('educonnect_onboarded');
-    if (onboarding) {
-      setIsOnboarded(true);
+export default function App() {
+  const [currentScreen, setCurrentScreen] = useState<Screen>("home");
+  const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
+
+  const handleNavigateToStudy = (subject: string) => {
+    setSelectedSubject(subject);
+    setCurrentScreen("study");
+  };
+
+  const renderScreen = () => {
+    switch (currentScreen) {
+      case "home":
+        return <HomeScreen onNavigateToStudy={handleNavigateToStudy} />;
+      case "study":
+        return <StudyScreen subject={selectedSubject} />;
+      case "quiz":
+        return <QuizScreen subject={selectedSubject} />;
+      case "bookmarks":
+        return <BookmarksScreen />;
+      case "leaderboard":
+        return <LeaderboardScreen />;
+      case "progress":
+        return <ProgressScreen />;
+      default:
+        return <HomeScreen onNavigateToStudy={handleNavigateToStudy} />;
     }
-  }, []);
-
-  const handleOnboardingComplete = () => {
-    localStorage.setItem('educonnect_onboarded', 'true');
-    setIsOnboarded(true);
   };
 
   return (
-    <AppProvider>
-      <div className="min-h-screen bg-gray-900 text-white">
-        {/* Header */}
-        <header className="bg-gray-800 px-4 py-3 flex items-center justify-between sticky top-0 z-50">
-          <div className="flex items-center gap-2">
-            <GraduationCap className="w-8 h-8 text-emerald-400" />
-            <h1 className="text-xl font-bold">EduConnect</h1>
-          </div>
-          <button
-            onClick={() => setIsMusicEnabled(!isMusicEnabled)}
-            className="p-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition-colors"
-          >
-            {isMusicEnabled ? (
-              <Volume2 className="w-5 h-5 text-emerald-400" />
-            ) : (
-              <VolumeX className="w-5 h-5 text-gray-400" />
-            )}
-          </button>
-        </header>
+    <div className="flex flex-col h-screen bg-gray-900 text-white">
+      {/* Main Content */}
+      <main className="flex-1 overflow-y-auto pb-20">{renderScreen()}</main>
 
-        {/* Music Player */}
-        {isMusicEnabled && <MusicPlayer />}
-
-        {/* Main Content */}
-        {!isOnboarded ? (
-          <OnboardingScreen onComplete={handleOnboardingComplete} />
-        ) : (
-          <MainApp />
-        )}
-      </div>
-    </AppProvider>
+      {/* Bottom Navigation */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700">
+        <div className="grid grid-cols-5 h-16">
+          <NavButton
+            icon={Home}
+            label="Study"
+            isActive={currentScreen === "home"}
+            onClick={() => setCurrentScreen("home")}
+          />
+          <NavButton
+            icon={BookOpen}
+            label="Quizzes"
+            isActive={currentScreen === "quiz"}
+            onClick={() => setCurrentScreen("quiz")}
+          />
+          <NavButton
+            icon={Bookmark}
+            label="Bookmarks"
+            isActive={currentScreen === "bookmarks"}
+            onClick={() => setCurrentScreen("bookmarks")}
+          />
+          <NavButton
+            icon={Trophy}
+            label="Leaderboard"
+            isActive={currentScreen === "leaderboard"}
+            onClick={() => setCurrentScreen("leaderboard")}
+          />
+          <NavButton
+            icon={TrendingUp}
+            label="Tracker"
+            isActive={currentScreen === "progress"}
+            onClick={() => setCurrentScreen("progress")}
+          />
+        </div>
+      </nav>
+    </div>
   );
 }
 
-export default App;
+interface NavButtonProps {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  isActive: boolean;
+  onClick: () => void;
+}
+
+function NavButton({ icon: Icon, label, isActive, onClick }: NavButtonProps) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex flex-col items-center justify-center gap-1 transition-colors ${
+        isActive ? "text-emerald-400" : "text-gray-400 hover:text-gray-300"
+      }`}
+    >
+      <Icon className="w-5 h-5" />
+      <span className="text-xs font-medium">{label}</span>
+    </button>
+  );
+}
