@@ -1,33 +1,44 @@
 import React, { useState } from "react";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 interface Message {
   sender: "user" | "bot";
   text: string;
 }
 
+const genAI = new GoogleGenerativeAI("AIzaSyDpubizana4s0kFIal2M9e5Ib9stdMSM5A");
+
 export default function ChatbotScreen() {
   const [messages, setMessages] = useState<Message[]>([
     { sender: "bot", text: "Hello 👋! I’m your EduConnect AI assistant. Ask me anything!" },
   ]);
   const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!input.trim()) return;
 
     const userMessage: Message = { sender: "user", text: input };
     setMessages((prev) => [...prev, userMessage]);
-
-    // Dummy AI Response (replace later with API call)
-    const botMessage: Message = {
-      sender: "bot",
-      text: `🤖 I think you asked about "${input}". Here's a helpful explanation (dummy).`,
-    };
-
-    setTimeout(() => {
-      setMessages((prev) => [...prev, botMessage]);
-    }, 500);
-
     setInput("");
+    setLoading(true);
+
+    try {
+      const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+      const result = await model.generateContent(input);
+      const response = result.response.text();
+
+      const botMessage: Message = { sender: "bot", text: response };
+      setMessages((prev) => [...prev, botMessage]);
+    } catch (error) {
+      console.error("AI Error:", error);
+      setMessages((prev) => [
+        ...prev,
+        { sender: "bot", text: "⚠️ Sorry, I couldn’t get a response. Try again later." },
+      ]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -48,6 +59,7 @@ export default function ChatbotScreen() {
             {msg.text}
           </div>
         ))}
+        {loading && <div className="text-gray-400">🤖 Thinking...</div>}
       </div>
 
       {/* Input Box */}
@@ -62,7 +74,8 @@ export default function ChatbotScreen() {
         />
         <button
           onClick={handleSend}
-          className="px-4 py-2 bg-emerald-500 rounded-lg hover:bg-emerald-600"
+          disabled={loading}
+          className="px-4 py-2 bg-emerald-500 rounded-lg hover:bg-emerald-600 disabled:opacity-50"
         >
           Send
         </button>
